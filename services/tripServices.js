@@ -26,33 +26,31 @@ const getAvailableSeats = (bus, bookings) => {
 const getTrips = async (query) => {
   let { sourceCityId, destinationCityId, travelDate } = query;
 
-  const today12AM = new Date();
-  today12AM.setHours(0, 0, 0, 0);
-  const today1159PM = new Date();
-  today1159PM.setHours(23, 59, 59, 999);
-
-  let searchFilter = {};
-
-  if (today12AM.getTime() / 1000 > Number(travelDate)) {
+  const travelDateNum = Number(travelDate);
+  if (!travelDate || Number.isNaN(travelDateNum)) {
     throw new CustomError("Invalid Date", 400);
   }
 
-  if (
-    travelDate >= today12AM.getTime() / 1000 &&
-    travelDate <= today1159PM.getTime() / 1000
-  ) {
+  // travelDate is start-of-day in the user's timezone (unix seconds).
+  // Compare against a rolling window so UTC server time does not reject valid local dates.
+  const now = Math.floor(Date.now() / 1000);
+  const dayEnd = travelDateNum + 86400 - 1;
+
+  if (dayEnd < now - 86400) {
+    throw new CustomError("Invalid Date", 400);
+  }
+
+  let searchFilter = {};
+
+  if (travelDateNum <= now && now <= dayEnd) {
     searchFilter["startTime"] = {
-      $gte: parseInt(Date.now() / 1000),
-      $lte: parseInt(today1159PM.getTime() / 1000),
+      $gte: now,
+      $lte: dayEnd,
     };
   } else {
-    const travelDate12AM = new Date(travelDate * 1000);
-    travelDate12AM.setHours(0, 0, 0, 0);
-    const travelDate1159PM = new Date(travelDate * 1000);
-    travelDate1159PM.setHours(23, 59, 59, 999);
     searchFilter["startTime"] = {
-      $gte: parseInt(travelDate12AM.getTime() / 1000),
-      $lte: parseInt(travelDate1159PM.getTime() / 1000),
+      $gte: travelDateNum,
+      $lte: dayEnd,
     };
   }
 
