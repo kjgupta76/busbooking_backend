@@ -1,0 +1,32 @@
+const jwt = require("jsonwebtoken");
+
+const authenticateUser = async (req, res, next) => {
+  try {
+    let token;
+    if (req.headers.authorization) {
+      token = req.headers.authorization.replace(/^Bearer:?\s+/i, "");
+    }
+    if (!token) {
+      return res.status(401).json({
+        message: "User not authenticated",
+        success: false,
+      });
+    }
+    const decodedToken = await jwt.verify(token, process.env.JWT_SECRET);
+    if (!decodedToken) {
+      return res.status(401).json({
+        message: "Invalid Token",
+        success: false,
+      });
+    }
+    req.id = decodedToken.userId;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      message: "Invalid or expired token",
+      success: false,
+    });
+  }
+};
+
+module.exports = authenticateUser;
