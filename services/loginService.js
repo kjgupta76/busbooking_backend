@@ -1,7 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/user");
-const Otp = require("../models/otp");
 
 const userLogin = async ({ email, password }) => {
   if (!email || !password) {
@@ -9,14 +8,9 @@ const userLogin = async ({ email, password }) => {
   }
   try {
     const user = await userModel.findOne({ email });
-    const otpRecord = await Otp.findOne({ email });
 
     if (!user) {
       throw new Error("User does not exist");
-    }
-
-    if (otpRecord === null) {
-      throw new Error("Verify your email before login.");
     }
 
     const isMatch = await bcrypt.compare(password, user.password);

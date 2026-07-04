@@ -5,7 +5,6 @@ const userSchema = new Schema({
   fullName: {
     type: String,
     required: [true, "Please enter your username"],
-    unique: true,
     minLength: [5, "Username should be more than 5 characters"],
   },
   gender: {

@@ -12,7 +12,6 @@ const bookingRouter = require("./controllers/booking");
 const seatRouter = require("./controllers/seat.js");
 const cookieParser = require("cookie-parser");
 const mongoose = require("mongoose");
-const router = require("./controllers/generateOtp.js");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 mongoose
@@ -28,7 +27,6 @@ app.use("/api/seat", seatRouter);
 app.use("/register", signUpRouter);
 app.use("/auth", loginRouter);
 app.use("/booking", bookingRouter);
-app.use("/otp", router);
 
 const PORT = process.env.PORT || 8080;
 const MODE = process.env.NODE_ENV || "production";
