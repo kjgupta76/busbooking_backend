@@ -10,9 +10,10 @@ const isEmailValidate = (key) => {
 // Validate user data
 const userDataValidation = ({ fullName, email, password, gender }) => {
   return new Promise((resolve, reject) => {
-    if (!fullName || !email || !password || !gender) {
-      return reject("Missing required user data");
-    }
+    if (!fullName) return reject("Please enter your full name");
+    if (!email) return reject("Please enter your email");
+    if (!password) return reject("Please enter your password");
+    if (!gender) return reject("Please select your gender");
 
     if (typeof email !== "string") return reject("Email must be a string");
     if (typeof fullName !== "string")
