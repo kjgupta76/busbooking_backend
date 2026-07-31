@@ -1,55 +1,70 @@
 const CustomError = require("../utils/createCustomError");
 
-const Error = (err, req, res, next) => {
+const ErrorMiddleware = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.message = err.message || "Internal Server Error";
 
-  // handling error in development
-  if (process.env.NODE_ENV === "development") {
-    handleDevelopmentError(err, res);
-  }
-
-  // handling error in production
+  // Default to development handler if not in production to prevent request hangs
   if (process.env.NODE_ENV === "production") {
-    const errCopy = { ...err };
-    errCopy.message = err.message;
-    handleProductionError(errCopy, res);
+    handleProductionError(err, res);
+  } else {
+    handleDevelopmentError(err, res);
   }
 };
 
 const handleDevelopmentError = (err, res) => {
-  console.log(err);
+  console.error("Development Error:", err);
   res.status(err.statusCode).json({
     success: false,
-    error: err,
     message: err.message,
-    stackTrace: err.stack,
+    error: {
+      message: err.message,
+      type: err.name || "Error",
+      statusCode: err.statusCode,
+      stack: err.stack,
+    },
   });
 };
 
-const handleProductionError = (errCopy, res) => {
+const handleProductionError = (err, res) => {
+  let errResponse = {
+    statusCode: err.statusCode,
+    message: err.message,
+    name: err.name || "Error",
+  };
+
   // Wrong Mongoose Object ID Error
-  if (errCopy.name === "CastError") {
-    const message = `Resource not found. Invalid: ${err.path}`;
-    errCopy = new CustomError(message, 404);
+  if (err.name === "CastError") {
+    errResponse.message = `Resource not found. Invalid: ${err.path}`;
+    errResponse.statusCode = 404;
+    errResponse.name = "CastError";
   }
 
   // Handling Mongoose Validation Error
-  if (errCopy.name === "ValidationError") {
-    const message = Object.values(err.errors).map((value) => value.message);
-    errCopy = new CustomError(message, 400);
+  else if (err.name === "ValidationError") {
+    errResponse.message = Object.values(err.errors || {}).map((value) => value.message).join(", ");
+    errResponse.statusCode = 400;
+    errResponse.name = "ValidationError";
   }
 
-  // Handle mongoose duplicate key errCopy
-  if (errCopy.code === 11000) {
-    const message = `Duplicate ${Object.keys(err.keyValue)} entered.`;
-    errCopy = new ErrorHandler(message, 400);
+  // Handle mongoose duplicate key error
+  else if (err.code === 11000) {
+    errResponse.message = `Duplicate ${Object.keys(err.keyValue || {}).join(", ")} entered.`;
+    errResponse.statusCode = 400;
+    errResponse.name = "DuplicateKeyError";
   }
-  console.log(errCopy);
-  res.status(errCopy.statusCode).json({
+
+  console.error("Production Error:", errResponse.message);
+
+  res.status(errResponse.statusCode).json({
     success: false,
-    message: errCopy.message,
+    message: errResponse.message,
+    error: {
+      message: errResponse.message,
+      type: errResponse.name,
+      statusCode: errResponse.statusCode,
+    },
   });
 };
 
-module.exports = Error;
+module.exports = ErrorMiddleware;

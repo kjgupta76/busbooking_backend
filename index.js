@@ -14,6 +14,7 @@ const cookieParser = require("cookie-parser");
 const mongoose = require("mongoose");
 const userModel = require("./models/user");
 
+
 const dropStaleUserIndexes = async () => {
   const indexes = await userModel.collection.indexes();
   const staleIndex = indexes.find((index) => index.name === "fullName_1");
@@ -33,7 +34,7 @@ mongoose
     try {
       await dropStaleUserIndexes();
     } catch (error) {
-      console.warn("User index cleanup skipped:", error.message);
+      console.warn("User index cleanup or migration skipped:", error.message);
     }
   });
 app.use(cors());
@@ -49,17 +50,6 @@ app.use("/booking", bookingRouter);
 
 const PORT = process.env.PORT || 8080;
 const MODE = process.env.NODE_ENV || "production";
-
-// if (MODE === "production") {
-//   app.use(express.static(path.resolve("public")));
-//   app.get("*", (req, res) => {
-//     res.sendFile(path.resolve("public", "index.html"));
-//   });
-// } else {
-//   app.get("/", (req, res) => {
-//     res.status(200).send("server is running");
-//   });
-// }
 
 app.use(globalErrorHandler);
 

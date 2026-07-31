@@ -2,25 +2,19 @@ const tripModel = require("../models/trip.js");
 const CustomError = require("./../utils/createCustomError.js");
 const cityModel = require("../models/city.js");
 const busModel = require("../models/bus.js");
-const { bookingModel } = require("../models/booking.js");
+const seatModel = require("../models/seat.js");
 const { Types } = require("mongoose");
 
-const getAvailableSeats = (bus, bookings) => {
-  const totalSeat = bus.layout?.upperDeck.length + bus.layout.lowerDeck.length;
-  let availableSeats = totalSeat;
+const getAvailableSeats = (bus, tripId, occupiedSeats) => {
+  const upperDeckCount = bus.layout?.upperDeck?.length || 0;
+  const lowerDeckCount = bus.layout?.lowerDeck?.length || 0;
+  const totalSeats = upperDeckCount + lowerDeckCount;
 
-  if (bookings.length) {
-    console.log(bookings);
-    const bookedSeats = bookings.reduce((a, c) => {
-      console.log(c.seatsInfo.length);
-      return a + c.seatsInfo.length;
-    }, 0);
-    console.log(bookedSeats);
+  const tripOccupiedCount = occupiedSeats.filter(
+    (seat) => seat.tripId.toString() === tripId.toString()
+  ).length;
 
-    availableSeats = totalSeat - bookedSeats;
-  }
-  // console.log(availableSeats);
-  return availableSeats;
+  return totalSeats - tripOccupiedCount;
 };
 
 const getTrips = async (query) => {
@@ -76,16 +70,12 @@ const getTrips = async (query) => {
   const trips = await tripModel
     .find(searchFilter, tripFilterOjb)
     .populate("busId", "_id busPartner amenities layout busType");
-  const tripIds = trips.map((item) => ({ tripId: item._id }));
+  const tripIds = trips.map((item) => item._id);
 
-  let allBookings = [];
+  let occupiedSeats = [];
   if (tripIds.length > 0) {
-    allBookings = await bookingModel.find(
-      { $or: tripIds },
-      { seatsInfo: 1, tripId: 1 }
-    );
+    occupiedSeats = await seatModel.find({ tripId: { $in: tripIds } });
   }
-  console.log("allBookings", allBookings);
   const response = {};
   response.success = true;
   response.results = trips.length;
@@ -100,19 +90,14 @@ const getTrips = async (query) => {
       if (minPrice > seatPrice.price) minPrice = seatPrice.price;
       if (maxPrice < seatPrice.price) maxPrice = seatPrice.price;
     });
-    const bookings = allBookings.filter((item) => {
-      const tripId = new Types.ObjectId(item.tripId);
-      return tripId.equals(trip._id);
-    });
     response.trips.push({
       busId: bus._id,
       tripId: trip._id,
-      // used while booking any seats for this trip.
-      busPartner: bus.busPartner, //bus
+      busPartner: bus.busPartner,
       departureTime: trip.startTime,
-      arrivalTime: trip.endTime, // epoch time
-      amenities: bus.amenities, //bus
-      availableSeats: getAvailableSeats(bus, bookings),
+      arrivalTime: trip.endTime,
+      amenities: bus.amenities,
+      availableSeats: getAvailableSeats(bus, trip._id, occupiedSeats),
       busType: bus.busType,
       minPrice,
       maxPrice,

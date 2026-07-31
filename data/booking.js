@@ -4,7 +4,7 @@ const bookings = [
   {
     tripId: "", // Replace with actual trip ObjectId
     userId: "", // Replace with actual user ObjectId
-    bookingTime: Math.floor(new Date("2024-08-30T06:00:00Z").getTime()), // Epoch time in milliseconds
+    bookingTime: Math.floor(new Date("2024-08-30T06:00:00Z").getTime()),
     seatsInfo: [
       {
         paidAmount: 500,
@@ -24,7 +24,7 @@ const bookings = [
   {
     tripId: "", // Replace with actual trip ObjectId
     userId: "", // Replace with actual user ObjectId
-    bookingTime: Math.floor(new Date("2024-08-30T07:00:00Z").getTime()), // Epoch time in milliseconds
+    bookingTime: Math.floor(new Date("2024-08-30T07:00:00Z").getTime()),
     seatsInfo: [
       {
         paidAmount: 600,
@@ -38,7 +38,7 @@ const bookings = [
       phoneNumber: "2345678901",
       email: "bob.johnson@example.com",
     },
-    boardingPointId: 2, // Replace with actual stopId
+    boardingPointId: 2,
     droppingPointId: 4, // Replace with actual stopId
   },
   {

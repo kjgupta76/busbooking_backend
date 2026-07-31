@@ -33,9 +33,20 @@ const bookingSchema = new Schema({
     phoneNumber: String,
     email: String,
   },
-  boardingPointId: { type: Number },
-  droppingPointId: { type: Number },
-});
+  boardingPointId: { type: Schema.Types.Mixed },
+  droppingPointId: { type: Schema.Types.Mixed },
+  status: {
+    type: String,
+    enum: ["PENDING", "CONFIRMED", "FAILED", "CANCELLED", "EXPIRED"],
+    default: "PENDING",
+    required: true,
+  },
+  idempotencyKey: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+}, { timestamps: true });
 
 const bookingModel = model("Booking", bookingSchema);
 

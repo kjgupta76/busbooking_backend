@@ -1,21 +1,25 @@
 const tripModel = require("../models/trip.js");
-const { bookingModel } = require("../models/booking.js");
+const seatModel = require("../models/seat.js");
 const CustomError = require("../utils/createCustomError.js");
 const { Types } = require("mongoose");
 
 const formatDeckSeats = (deckSeats = [], priceMap, bookedSeatMap) => {
-  return deckSeats.map((seat) => ({
-    seatNumber: seat.seatNumber,
-    gender: bookedSeatMap[seat.seatNumber] ?? null,
-    row: seat.row,
-    column: seat.column,
-    price: priceMap[seat.seatNumber] ?? 0,
-  }));
+  return deckSeats.map((seat) => {
+    const occupancy = bookedSeatMap[seat.seatNumber];
+    return {
+      seatNumber: seat.seatNumber,
+      gender: occupancy ? occupancy.gender : null,
+      status: occupancy ? occupancy.status : "AVAILABLE",
+      row: seat.row,
+      column: seat.column,
+      price: priceMap[seat.seatNumber] ?? 0,
+    };
+  });
 };
 
 const getSeatLayout = async (query) => {
   const tripId = query.tripId;
-
+  console.log("tripId", tripId);
   if (!tripId || !Types.ObjectId.isValid(tripId)) {
     throw new CustomError("Please provide a valid tripId", 400);
   }
@@ -38,14 +42,18 @@ const getSeatLayout = async (query) => {
     throw new CustomError("Seat layout not available for this trip", 400);
   }
 
-  const bookings = await bookingModel.find({ tripId });
+  const occupiedSeats = await seatModel.find({ tripId });
+
+  console.log("occupiedSeats", occupiedSeats);
   const bookedSeatMap = {};
 
-  bookings.forEach((booking) => {
-    (booking.seatsInfo || []).forEach((seat) => {
-      bookedSeatMap[seat.seatNumber] = seat.gender;
-    });
+  occupiedSeats.forEach((seat) => {
+    bookedSeatMap[seat.seatNumber] = {
+      gender: seat.gender || "M",
+      status: seat.status || "LOCKED",
+    };
   });
+  console.log("bookedSeatMap", bookedSeatMap);
 
   const priceMap = {};
   (trip.prices || []).forEach((seatPrice) => {
