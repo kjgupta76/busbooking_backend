@@ -28,6 +28,7 @@ const seatSchema = new Schema(
       type: String,
       enum: ["M", "F", "O"],
     },
+    // Present only while status === LOCKED. Unset on BOOKED so TTL can never remove booked seats.
     expireAt: {
       type: Date,
     },
@@ -37,12 +38,16 @@ const seatSchema = new Schema(
 
 // Compound unique index to prevent multiple concurrent locks/bookings of the same seat on a trip
 seatSchema.index({ tripId: 1, seatNumber: 1 }, { unique: true });
-// **In MongoDB, the values 1 and -1 specify the sort order of the index keys:
-// **When you define { tripId: 1, seatNumber: 1 }, MongoDB creates a balanced tree (B-Tree) data structure.
 
-
-// TTL index to automatically remove locked seats when expireAt is reached (expireAfterSeconds: 0)
-seatSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
+// TTL removes only expired LOCKED seats (AVAILABLE again). BOOKED seats are excluded.
+seatSchema.index(
+  { expireAt: 1 },
+  {
+    expireAfterSeconds: 0,
+    partialFilterExpression: { status: "LOCKED", expireAt: { $exists: true } },
+    name: "locked_seat_ttl",
+  }
+);
 
 const seatModel = model("Seat", seatSchema);
 

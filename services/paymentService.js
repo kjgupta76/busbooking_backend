@@ -61,14 +61,16 @@ const paymentService = {
 
   /**
    * Initiate a payment intent via the selected gateway
-   */
+  */
   initiatePayment: async (paymentId) => {
     const payment = await paymentModel.findById(paymentId);
+
     if (!payment) {
       throw new PaymentError("Payment record not found", 404);
     }
 
     const gatewayProvider = gateways[payment.gateway];
+
     if (!gatewayProvider) {
       throw new PaymentError(`Payment gateway '${payment.gateway}' is not registered or supported`, 400);
     }
@@ -76,6 +78,7 @@ const paymentService = {
     try {
       // Call pluggable gateway implementation
       const result = await gatewayProvider.createPaymentIntent(payment.orderId, payment.amount);
+    console.log("gatewayProviderresult", result);
       
       // Update payment record with initiation details
       payment.gatewayTransactionId = result.gatewayTransactionId;

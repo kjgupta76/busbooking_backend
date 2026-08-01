@@ -46,6 +46,12 @@ const bookingSchema = new Schema({
     unique: true,
     sparse: true,
   },
+  // Incremented each time the same user resumes a PENDING booking (Phase 2 recovery)
+  retryCount: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
 }, { timestamps: true });
 
 const bookingModel = model("Booking", bookingSchema);
